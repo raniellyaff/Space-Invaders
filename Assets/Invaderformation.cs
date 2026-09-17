@@ -5,35 +5,31 @@ public class InvaderFormation : MonoBehaviour
 {
     public static InvaderFormation Instance;
 
-    [Header("Formação")]
-    public GameObject invaderPrefabType1; // linha de cima  - 10 pts
-    public GameObject invaderPrefabType2; // linhas do meio - 20 pts
-    public GameObject invaderPrefabType3; // linhas de baixo - 30 pts
-    public int rows = 5;
-    public int columns = 10;
-    public float spacingX = 1f;
-    public float spacingY = 0.8f;
-    public Vector2 startPosition = new Vector2(-4.5f, 4f);
+    [Header("Invasores (arraste TODOS os invasores já posicionados na cena aqui)")]
+    public List<GameObject> invaders = new List<GameObject>();
 
-    [Header("Movimento (passo a passo, igual ao PDF)")]
+    [Header("Movimento (opcional - deixe desmarcado para ficarem parados)")]
+    public bool invadersMoveAcrossScreen = false;
     public float stepDistance = 0.3f;
-    public int stepsBeforeTurn = 10; // 10 passos numa direção, 10 na outra
+    public int stepsBeforeTurn = 10;
     public float moveInterval = 0.5f;
-    public float dropDistance = 0.5f; // desce quando muda de direção
+    public float dropDistance = 0.5f;
     public float speedIncreasePerInvaderLost = 0.02f;
 
     [Header("Tiro dos Invasores")]
-    public GameObject invaderMissilePrefab;
+    [Tooltip("Objeto da própria cena, DESATIVADO, usado como molde para o Instantiate. Não é um prefab.")]
+    public GameObject invaderMissileTemplate;
     public float minShootInterval = 1.5f;
     public float maxShootInterval = 4f;
 
     [Header("Nave Chefe (30~50s)")]
-    public GameObject bossPrefab;
+    [Tooltip("Objeto da própria cena, DESATIVADO, usado como molde para o Instantiate. Não é um prefab.")]
+    public GameObject bossTemplate;
     public float minBossInterval = 30f;
     public float maxBossInterval = 50f;
     public Vector2 bossSpawnPosition = new Vector2(-5.5f, 4.8f);
 
-    private List<GameObject> invaders = new List<GameObject>();
+    private int initialInvaderCount;
     private int direction = 1;
     private int stepsTaken = 0;
     private float moveTimer = 0f;
@@ -58,37 +54,21 @@ public class InvaderFormation : MonoBehaviour
 
     void Start()
     {
-        BuildFormation();
+        // Não instancia nada: os invasores já existem na cena, só limpamos
+        // possíveis entradas vazias da lista arrastada no Inspector.
+        invaders.RemoveAll(inv => inv == null);
+        initialInvaderCount = invaders.Count;
+
         nextShootInterval = Random.Range(minShootInterval, maxShootInterval);
         nextBossInterval = Random.Range(minBossInterval, maxBossInterval);
     }
 
-    void BuildFormation()
-    {
-        for (int row = 0; row < rows; row++)
-        {
-            GameObject prefab = invaderPrefabType1;
-            if (row == 1 || row == 2) prefab = invaderPrefabType2;
-            if (row >= 3) prefab = invaderPrefabType3;
-
-            if (prefab == null) continue;
-
-            for (int col = 0; col < columns; col++)
-            {
-                Vector2 pos = startPosition + new Vector2(col * spacingX, -row * spacingY);
-                GameObject invader = Instantiate(prefab, pos, Quaternion.identity, transform);
-                invaders.Add(invader);
-            }
-        }
-    }
-
-    // Chamado pelo StartButton (igual ao ball.StartBall() no Arkanoid)
+    // Chamado pelo StartButton
     public void StartGame()
     {
         isActive = true;
     }
 
-    // Permite que outros scripts (como o player.cs) saibam se o jogo já começou
     public bool IsActive
     {
         get { return isActive; }
@@ -102,7 +82,11 @@ public class InvaderFormation : MonoBehaviour
 
         if (invaders.Count == 0) return; // LevelManager detecta a vitória
 
-        MoveFormation();
+        if (invadersMoveAcrossScreen)
+        {
+            MoveFormation();
+        }
+
         HandleShooting();
         HandleBoss();
     }
@@ -111,7 +95,7 @@ public class InvaderFormation : MonoBehaviour
     {
         moveTimer += Time.deltaTime;
 
-        int destroyedCount = (rows * columns) - invaders.Count;
+        int destroyedCount = Mathf.Max(0, initialInvaderCount - invaders.Count);
         float currentInterval = Mathf.Max(0.08f, moveInterval - (speedIncreasePerInvaderLost * destroyedCount));
 
         if (moveTimer < currentInterval) return;
@@ -159,7 +143,6 @@ public class InvaderFormation : MonoBehaviour
 
         float bottomEdge = bottomWall.transform.position.y + (bottomWall.transform.localScale.y / 2);
 
-        // Se um invasor tocou a parede inferior, o jogo acaba (regra do PDF)
         if (pos.y <= bottomEdge + 0.5f)
         {
             gameOverTriggered = true;
@@ -179,12 +162,13 @@ public class InvaderFormation : MonoBehaviour
         shootTimer = 0f;
         nextShootInterval = Random.Range(minShootInterval, maxShootInterval);
 
-        if (invaders.Count == 0 || invaderMissilePrefab == null) return;
+        if (invaders.Count == 0 || invaderMissileTemplate == null) return;
 
         GameObject shooter = invaders[Random.Range(0, invaders.Count)];
         if (shooter == null) return;
 
-        Instantiate(invaderMissilePrefab, shooter.transform.position, Quaternion.identity);
+        GameObject missile = Instantiate(invaderMissileTemplate, shooter.transform.position, Quaternion.identity);
+        missile.SetActive(true); // o molde fica desativado na cena, então ativamos a cópia
     }
 
     void HandleBoss()
@@ -195,9 +179,10 @@ public class InvaderFormation : MonoBehaviour
         bossTimer = 0f;
         nextBossInterval = Random.Range(minBossInterval, maxBossInterval);
 
-        if (bossPrefab == null) return;
+        if (bossTemplate == null) return;
 
-        Instantiate(bossPrefab, bossSpawnPosition, Quaternion.identity);
+        GameObject boss = Instantiate(bossTemplate, bossSpawnPosition, Quaternion.identity);
+        boss.SetActive(true); // o molde fica desativado na cena, então ativamos a cópia
     }
 
     public int GetRemainingInvaders()

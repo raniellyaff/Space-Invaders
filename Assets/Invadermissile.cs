@@ -10,13 +10,24 @@ public class InvaderMissile : MonoBehaviour
     {
         rb2d = GetComponent<Rigidbody2D>();
         rb2d.gravityScale = 0f;
+
+        // Pega a posição X do player UMA ÚNICA VEZ, no instante do disparo.
+        // Depois disso o míssil não persegue mais, só desce reto.
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            Vector3 pos = transform.position;
+            pos.x = player.transform.position.x;
+            transform.position = pos;
+        }
+
         rb2d.linearVelocity = Vector2.down * speed;
     }
 
-    void OnCollisionEnter2D(Collision2D coll)
+    void OnTriggerEnter2D(Collider2D other)
     {
         // ===== JOGADOR =====
-        if (coll.collider.CompareTag("Player"))
+        if (other.CompareTag("Player"))
         {
             if (ScoreManager.Instance != null)
             {
@@ -27,7 +38,7 @@ public class InvaderMissile : MonoBehaviour
         }
 
         // ===== PAREDE INFERIOR =====
-        if (coll.collider.CompareTag("BottomWall"))
+        else if (other.CompareTag("BottomWall"))
         {
             Destroy(gameObject);
         }

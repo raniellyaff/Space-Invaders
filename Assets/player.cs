@@ -10,6 +10,7 @@ public class player : MonoBehaviour
     public float fireCooldown = 0.4f;
 
     [Header("Tiro")]
+    [Tooltip("Objeto da própria cena, DESATIVADO, usado como molde para o Instantiate. Não é um prefab.")]
     public GameObject missilePrefab;
     public Transform missileSpawnPoint;
 
@@ -74,8 +75,11 @@ public class player : MonoBehaviour
         pos.x = Mathf.Clamp(pos.x, limiteEsquerdo, limiteDireito);
         transform.position = pos;
 
-        // Tiro automático: dispara sozinho, respeitando o fireCooldown
-        TryShoot();
+        // Tiro manual: só dispara quando o jogador aperta a tecla
+        if (Input.GetKeyDown(shootKey))
+        {
+            TryShoot();
+        }
     }
 
     void TryShoot()
@@ -89,6 +93,7 @@ public class player : MonoBehaviour
         lastShotTime = Time.time;
 
         Vector3 spawnPos = missileSpawnPoint != null ? missileSpawnPoint.position : transform.position;
-        Instantiate(missilePrefab, spawnPos, Quaternion.identity);
+        GameObject missile = Instantiate(missilePrefab, spawnPos, Quaternion.identity);
+        missile.SetActive(true); // o molde fica desativado na cena, então ativamos a cópia
     }
 }
