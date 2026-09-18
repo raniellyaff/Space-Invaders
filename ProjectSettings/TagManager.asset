@@ -12,6 +12,7 @@ TagManager:
   - BottomWall
   - Invader
   - Boss
+  - PlayerMissile
   layers:
   - Default
   - TransparentFX

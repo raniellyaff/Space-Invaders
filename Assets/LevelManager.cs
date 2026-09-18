@@ -16,13 +16,9 @@ public class LevelManager : MonoBehaviour
     void Awake()
     {
         if (Instance == null)
-        {
             Instance = this;
-        }
         else
-        {
             Destroy(gameObject);
-        }
     }
 
     void Start()
@@ -42,8 +38,13 @@ public class LevelManager : MonoBehaviour
 
     void CheckLevelComplete()
     {
-        // ===== ÚNICA MUDANÇA: bricks -> invasores restantes na formação =====
-        if (InvaderFormation.Instance != null && InvaderFormation.Instance.GetRemainingInvaders() == 0)
+        if (InvaderFormation.Instance == null) return;
+
+        int remainingInvaders = InvaderFormation.Instance.GetRemainingInvaders();
+
+        if (remainingInvaders == 0
+            && !Boss.IsBossAlive
+            && InvaderFormation.Instance.IsActive)
         {
             CompleteLevel();
         }
@@ -55,9 +56,7 @@ public class LevelManager : MonoBehaviour
         Time.timeScale = 0f;
 
         if (levelCompletePanel != null)
-        {
             levelCompletePanel.SetActive(true);
-        }
 
         if (levelCompleteText != null)
         {
@@ -70,13 +69,9 @@ public class LevelManager : MonoBehaviour
         {
             string sceneName = SceneManager.GetActiveScene().name;
             if (sceneName == "Scene1")
-            {
                 nextLevelButtonText.text = "Proximo Nivel";
-            }
             else if (sceneName == "Scene2")
-            {
                 nextLevelButtonText.text = "Ver Resultado";
-            }
         }
 
         if (levelFinalScoreText != null && ScoreManager.Instance != null)
@@ -104,9 +99,7 @@ public class LevelManager : MonoBehaviour
         if (!string.IsNullOrEmpty(nextScene))
         {
             if (ScoreManager.Instance != null)
-            {
                 ScoreManager.Instance.ResetLivesForNewLevel();
-            }
 
             SceneManager.LoadScene(nextScene);
         }

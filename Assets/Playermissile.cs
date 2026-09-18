@@ -15,6 +15,10 @@ public class PlayerMissile : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
+        // Ignora outros mísseis (do player ou do inimigo)
+        if (other.CompareTag("PlayerMissile")) return;
+        if (other.name.Contains("Missile")) return;
+
         // ===== INVASOR COMUM =====
         if (other.CompareTag("Invader"))
         {
@@ -37,7 +41,8 @@ public class PlayerMissile : MonoBehaviour
                 ScoreManager.Instance.AddScore(bossScript.points);
             }
 
-            Destroy(other.gameObject);
+            if (bossScript != null) bossScript.TakeHit();
+
             Destroy(gameObject);
         }
 
@@ -46,8 +51,5 @@ public class PlayerMissile : MonoBehaviour
         {
             Destroy(gameObject);
         }
-
-        // Observação: mísseis do inimigo (tag não verificada aqui) passam direto,
-        // sem interagir com o míssil do player.
     }
 }

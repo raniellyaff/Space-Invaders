@@ -91,9 +91,7 @@ public class ScoreManager : MonoBehaviour
         {
             GameObject panel = GameObject.Find("GameOverPanel");
             if (panel != null)
-            {
                 gameOverPanel = panel;
-            }
         }
 
         if (gameOverScoreText == null && gameOverPanel != null)
@@ -131,11 +129,7 @@ public class ScoreManager : MonoBehaviour
     public void AddLife()
     {
         if (isGameOver) return;
-
-        if (lives < maxLives)
-        {
-            lives++;
-        }
+        if (lives < maxLives) lives++;
     }
 
     public int GetLives() { return lives; }
@@ -166,16 +160,20 @@ public class ScoreManager : MonoBehaviour
     {
         isGameOver = true;
         Time.timeScale = 1f;
-
         SceneManager.LoadScene("Derrota");
     }
 
-    // ===== ÚNICO ACRÉSCIMO (necessário para o InvaderFormation) =====
-    // Permite que um invasor que tocou a parede inferior finalize o jogo,
-    // mesmo que o jogador ainda tenha vidas (regra clássica do Space Invaders).
     public void TriggerGameOver()
     {
         if (isGameOver) return;
+        GameOver();
+    }
+
+    public void KillPlayerInstant()
+    {
+        if (isGameOver) return;
+
+        lives = 0;
         GameOver();
     }
 

@@ -17,13 +17,11 @@ public class InvaderFormation : MonoBehaviour
     public float speedIncreasePerInvaderLost = 0.02f;
 
     [Header("Tiro dos Invasores")]
-    [Tooltip("Objeto da própria cena, DESATIVADO, usado como molde para o Instantiate. Não é um prefab.")]
     public GameObject invaderMissileTemplate;
     public float minShootInterval = 1.5f;
     public float maxShootInterval = 4f;
 
     [Header("Nave Chefe (30~50s)")]
-    [Tooltip("Objeto da própria cena, DESATIVADO, usado como molde para o Instantiate. Não é um prefab.")]
     public GameObject bossTemplate;
     public float minBossInterval = 30f;
     public float maxBossInterval = 50f;
@@ -43,19 +41,13 @@ public class InvaderFormation : MonoBehaviour
     void Awake()
     {
         if (Instance == null)
-        {
             Instance = this;
-        }
         else
-        {
             Destroy(gameObject);
-        }
     }
 
     void Start()
     {
-        // Não instancia nada: os invasores já existem na cena, só limpamos
-        // possíveis entradas vazias da lista arrastada no Inspector.
         invaders.RemoveAll(inv => inv == null);
         initialInvaderCount = invaders.Count;
 
@@ -63,7 +55,6 @@ public class InvaderFormation : MonoBehaviour
         nextBossInterval = Random.Range(minBossInterval, maxBossInterval);
     }
 
-    // Chamado pelo StartButton
     public void StartGame()
     {
         isActive = true;
@@ -80,12 +71,10 @@ public class InvaderFormation : MonoBehaviour
 
         invaders.RemoveAll(inv => inv == null);
 
-        if (invaders.Count == 0) return; // LevelManager detecta a vitória
+        if (invaders.Count == 0 && !Boss.IsBossAlive) return;
 
         if (invadersMoveAcrossScreen)
-        {
             MoveFormation();
-        }
 
         HandleShooting();
         HandleBoss();
@@ -101,7 +90,33 @@ public class InvaderFormation : MonoBehaviour
         if (moveTimer < currentInterval) return;
         moveTimer = 0f;
 
-        bool shouldTurn = stepsTaken >= stepsBeforeTurn;
+        // ===== Verifica se algum invasor chegou na parede lateral =====
+        bool hitWall = false;
+
+        GameObject leftWall = GameObject.FindGameObjectWithTag("LeftWall");
+        GameObject rightWall = GameObject.FindGameObjectWithTag("RightWall");
+
+        float leftEdge = -999f;
+        float rightEdge = 999f;
+
+        if (leftWall != null)
+            leftEdge = leftWall.transform.position.x + (leftWall.transform.localScale.x / 2);
+
+        if (rightWall != null)
+            rightEdge = rightWall.transform.position.x - (rightWall.transform.localScale.x / 2);
+
+        foreach (GameObject invader in invaders)
+        {
+            if (invader == null) continue;
+
+            float x = invader.transform.position.x;
+
+            if (direction > 0 && x >= rightEdge) { hitWall = true; break; }
+            if (direction < 0 && x <= leftEdge)  { hitWall = true; break; }
+        }
+
+        // ===== Vira e desce OU anda para o lado =====
+        bool shouldTurn = hitWall || stepsTaken >= stepsBeforeTurn;
 
         if (shouldTurn)
         {
@@ -148,9 +163,7 @@ public class InvaderFormation : MonoBehaviour
             gameOverTriggered = true;
 
             if (ScoreManager.Instance != null)
-            {
                 ScoreManager.Instance.TriggerGameOver();
-            }
         }
     }
 
@@ -168,7 +181,7 @@ public class InvaderFormation : MonoBehaviour
         if (shooter == null) return;
 
         GameObject missile = Instantiate(invaderMissileTemplate, shooter.transform.position, Quaternion.identity);
-        missile.SetActive(true); // o molde fica desativado na cena, então ativamos a cópia
+        missile.SetActive(true);
     }
 
     void HandleBoss()
@@ -179,10 +192,16 @@ public class InvaderFormation : MonoBehaviour
         bossTimer = 0f;
         nextBossInterval = Random.Range(minBossInterval, maxBossInterval);
 
-        if (bossTemplate == null) return;
+        if (Boss.IsBossAlive) return;
+
+        if (bossTemplate == null)
+        {
+            Debug.Log("HandleBoss: o campo 'Boss Template' está VAZIO no Inspector!");
+            return;
+        }
 
         GameObject boss = Instantiate(bossTemplate, bossSpawnPosition, Quaternion.identity);
-        boss.SetActive(true); // o molde fica desativado na cena, então ativamos a cópia
+        boss.SetActive(true);
     }
 
     public int GetRemainingInvaders()
